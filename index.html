@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidebar App Moderno</title>
+    <!-- Enlace a Font Awesome para los íconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos generales para el cuerpo de la página */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            background-color: #f0f2f5; /* Fondo claro para el cuerpo */
+            overflow-x: hidden; /* Evita el scroll horizontal durante la transición */
+        }
+
+        /* Estilos para el contenedor principal del sidebar */
+        .sidebar {
+            width: 250px; /* Ancho inicial del sidebar */
+            background-color: #2c3e50; /* Color oscuro para el fondo del sidebar */
+            color: white; /* Color de texto blanco */
+            padding: 20px 0; /* Espaciado interno superior e inferior */
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); /* Sombra sutil a la derecha */
+            display: flex;
+            flex-direction: column; /* Organiza los elementos en columna */
+            height: 100vh; /* Ocupa toda la altura de la ventana (viewport height) */
+            position: fixed; /* Fija el sidebar en la pantalla */
+            left: 0; /* Alineado a la izquierda */
+            top: 0; /* Alineado en la parte superior */
+            transition: width 0.3s ease; /* Transición suave para el ancho */
+            z-index: 1000; /* Asegura que esté por encima de otros elementos */
+        }
+
+        /* Estilos para el estado colapsado del sidebar principal */
+        .sidebar.collapsed {
+            width: 80px; /* Ancho reducido cuando está colapsado */
+        }
+
+        /* Estilos para el encabezado del sidebar principal */
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between; /* Espacio entre el título y el botón */
+            align-items: center;
+            margin-bottom: 30px; /* Margen inferior */
+            padding: 0 20px; /* Espaciado lateral */
+            transition: padding 0.3s ease; /* Transición para el padding */
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            padding: 0 10px; /* Reduce el padding cuando colapsa */
+            justify-content: center; /* Centra el botón cuando el título desaparece */
+        }
+
+        .sidebar-header h2 {
+            margin: 0; /* Elimina el margen por defecto del h2 */
+            font-size: 1.8em; /* Tamaño de fuente */
+            color: #ecf0f1; /* Color del título */
+            white-space: nowrap; /* Evita que el texto se rompa */
+            overflow: hidden; /* Oculta el texto que se desborda */
+            transition: opacity 0.3s ease, font-size 0.3s ease; /* Transición para la opacidad y tamaño */
+        }
+
+        .sidebar.collapsed .sidebar-header h2 {
+            opacity: 0; /* Oculta el título cuando colapsa */
+            font-size: 0; /* Reduce el tamaño para que no ocupe espacio */
+            width: 0; /* Asegura que no ocupe espacio */
+        }
+
+        /* Estilos para el botón de alternar (toggle) del sidebar principal */
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: #ecf0f1;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: #34495e;
+            transform: scale(1.1); /* Efecto de escala al pasar el ratón */
+        }
+
+        /* Estilos para las secciones desplegables dentro del sidebar */
+        .sidebar-section {
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Separador entre secciones */
+            padding-bottom: 10px;
+        }
+
+        .sidebar-section:last-of-type {
+            border-bottom: none; /* Sin separador para la última sección */
+            padding-bottom: 0;
+        }
+
+        /* Estilos para el encabezado de cada sección desplegable */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #34495e; /* Fondo ligeramente diferente para el encabezado */
+            border-radius: 5px;
+            margin: 0 10px; /* Margen desde los bordes del sidebar */
+            transition: background-color 0.3s ease;
+        }
+
+        .section-header:hover {
+            background-color: #4a627a;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 1.1em;
+            color: #ecf0f1;
+            display: flex;
+            align-items: center;
+            white-space: nowrap; /* Evita que el texto se rompa */
+            overflow: hidden; /* Oculta el texto que se desborda */
+            transition: opacity 0.3s ease, width 0.3s ease;
+        }
+
+        .section-header h3 i {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        /* Oculta el texto del encabezado de la sección cuando el sidebar principal está colapsado */
+        .sidebar.collapsed .section-header h3 {
+            opacity: 0;
+            width: 0;
+        }
+        .sidebar.collapsed .section-header h3 i {
+            margin-right: 0; /* Centra el icono */
+        }
+
+        /* Estilos para el botón de alternar de la sección */
+        .section-toggle {
+            background: none;
+            border: none;
+            color: #ecf0f1;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        /* Rotación del icono de la flecha al expandir/colapsar */
+        .section-content.expanded + .section-header .section-toggle i {
+            transform: rotate(180deg);
+        }
+
+        /* Estilos para el contenido de cada sección (la lista de pestañas) */
+        .section-content {
+            list-style: none;
+            padding: 0;
+            margin: 5px 0 0 0; /* Ajusta el margen superior */
+            overflow: hidden; /* Crucial para la animación de max-height */
+            transition: max-height 0.3s ease-out; /* Animación suave */
+            max-height: 0; /* Por defecto, colapsado */
+        }
+
+        .section-content.expanded {
+            max-height: 500px; /* Un valor suficientemente grande para el contenido, se ajustará con JS */
+        }
+
+        /* Estilos para los enlaces de las pestañas dentro de las secciones */
+        .sidebar ul li a {
+            display: flex; /* Permite alinear ícono y texto */
+            align-items: center; /* Centra verticalmente los elementos */
+            padding: 15px 20px; /* Espaciado interno */
+            color: #ecf0f1; /* Color de texto por defecto */
+            text-decoration: none; /* Elimina el subrayado */
+            font-size: 1.1em; /* Tamaño de fuente */
+            transition: background-color 0.3s ease, color 0.3s ease, padding 0.3s ease; /* Transición suave */
+        }
+
+        /* Ajustes de padding y centrado cuando el sidebar principal está colapsado */
+        .sidebar.collapsed ul li a {
+            padding: 15px 0; /* Reduce el padding horizontal */
+            justify-content: center; /* Centra los íconos */
+        }
+
+        /* Estilos para los íconos dentro de los enlaces de las pestañas */
+        .sidebar ul li a i {
+            margin-right: 15px; /* Margen a la derecha del ícono */
+            font-size: 1.3em; /* Tamaño del ícono */
+            transition: margin-right 0.3s ease; /* Transición para el margen */
+        }
+
+        .sidebar.collapsed ul li a i {
+            margin-right: 0; /* Elimina el margen cuando el sidebar principal colapsa */
+        }
+
+        /* Estilos para el texto de las pestañas */
+        .sidebar ul li a span {
+            white-space: nowrap; /* Evita que el texto se rompa */
+            overflow: hidden; /* Oculta el texto que se desborda */
+            transition: opacity 0.3s ease, width 0.3s ease; /* Transición suave para la opacidad y ancho */
+            width: auto; /* Ancho automático por defecto */
+            opacity: 1; /* Visible por defecto */
+        }
+
+        .sidebar.collapsed ul li a span {
+            opacity: 0; /* Oculta el texto cuando el sidebar principal colapsa */
+            width: 0; /* Reduce el ancho para que no ocupe espacio */
+        }
+
+        /* Efecto al pasar el ratón (hover) sobre los enlaces de las pestañas */
+        .sidebar ul li a:hover {
+            background-color: #34495e; /* Un tono un poco más claro al pasar el ratón */
+            color: #ffffff; /* Color de texto blanco */
+        }
+
+        /* Estilos para la pestaña activa */
+        .sidebar ul li.active a {
+            background-color: #3498db; /* Color de acento para la pestaña activa (azul) */
+            color: #ffffff; /* Color de texto blanco */
+            font-weight: bold; /* Texto en negrita */
+            border-left: 5px solid #2980b9; /* Indicador visual de activo: una línea azul oscuro a la izquierda */
+        }
+
+        /* Ajuste del indicador activo cuando el sidebar principal está colapsado */
+        .sidebar.collapsed ul li.active a {
+            border-left: none; /* Elimina el borde izquierdo */
+            border-bottom: 5px solid #2980b9; /* Añade un borde inferior como indicador */
+        }
+
+        /* Estilos para el contenido principal de la página */
+        .main-content {
+            margin-left: 250px; /* Deja espacio a la izquierda para el sidebar fijo */
+            padding: 20px; /* Espaciado interno */
+            flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
+            background-color: #f9f9f9; /* Nuevo color de fondo: gris muy claro */
+            min-height: 100vh; /* Asegura que ocupe al menos toda la altura de la ventana */
+            box-shadow: inset 5px 0 10px -5px rgba(0, 0, 0, 0.05); /* Sombra sutil al borde del contenido */
+            transition: margin-left 0.3s ease; /* Transición suave para el margen */
+        }
+
+        .main-content.shifted {
+            margin-left: 80px; /* Ajusta el margen cuando el sidebar está colapsado */
+        }
+
+        /* Media queries para responsividad (ejemplo básico) */
+        @media (max-width: 768px) {
+            /* En pantallas pequeñas, el sidebar siempre estará colapsado o en un estado similar */
+            .sidebar {
+                width: 80px;
+                padding: 10px 0;
+            }
+
+            .sidebar-header {
+                padding: 0 10px;
+                justify-content: center;
+            }
+
+            .sidebar-header h2 {
+                opacity: 0;
+                font-size: 0;
+                width: 0;
+            }
+
+            .sidebar-toggle {
+                font-size: 1.2em; /* Un poco más pequeño el botón */
+            }
+
+            /* Las secciones internas también se ajustan al colapsar el sidebar principal */
+            .sidebar-section .section-header h3 {
+                opacity: 0;
+                width: 0;
+            }
+            .sidebar-section .section-header h3 i {
+                margin-right: 0;
+            }
+
+            .sidebar ul li a {
+                padding: 10px 0;
+                justify-content: center;
+            }
+
+            .sidebar ul li a i {
+                margin-right: 0;
+            }
+
+            .sidebar ul li a span {
+                opacity: 0;
+                width: 0;
+            }
+
+            .sidebar ul li.active a {
+                border-left: none;
+                border-bottom: 5px solid #2980b9;
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <aside id="mySidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>Mi App</h2>
+            <button id="sidebarToggle" class="sidebar-toggle">
+                <i class="fas fa-bars"></i> <!-- Icono de hamburguesa para alternar el sidebar principal -->
+            </button>
+        </div>
+
+        <!-- Sección: Información (Contenido de Google Docs) -->
+        <div class="sidebar-section">
+            <div class="section-header">
+                <h3><i class="fas fa-info-circle"></i> <span>Información</span></h3>
+                <button class="section-toggle">
+                    <i class="fas fa-chevron-up"></i> <!-- Icono para alternar la sección -->
+                </button>
+            </div>
+            <ul class="section-content expanded"> <!-- Por defecto, esta sección está expandida -->
+                <!-- Pestañas que coinciden con los IDs de Pestanas.txt -->
+                <li class="active"> <!-- Pestaña activa por defecto -->
+                    <a href="#" data-tab="tab1">
+                        <i class="fas fa-file-alt"></i> <span>General</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="tab2">
+                        <i class="fas fa-box"></i> <span>Producto</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="tab3">
+                        <i class="fas fa-question-circle"></i> <span>Preguntas</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="tab4">
+                        <i class="fas fa-address-book"></i> <span>Contacto</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="tab5">
+                        <i class="fas fa-newspaper"></i> <span>Novedades</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="tab6">
+                        <i class="fas fa-comment-alt"></i> <span>Testimonios</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Sección: Aplicación (Pestañas de la App) -->
+        <div class="sidebar-section">
+            <div class="section-header">
+                <h3><i class="fas fa-th-large"></i> <span>Aplicación</span></h3>
+                <button class="section-toggle">
+                    <i class="fas fa-chevron-down"></i> <!-- Icono para alternar la sección -->
+                </button>
+            </div>
+            <ul class="section-content"> <!-- Por defecto, esta sección está colapsada -->
+                <li>
+                    <a href="#" data-tab="inicio">
+                        <i class="fas fa-home"></i> <span>Inicio</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="perfil">
+                        <i class="fas fa-user"></i> <span>Perfil</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="ajustes">
+                        <i class="fas fa-cog"></i> <span>Ajustes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="mensajes">
+                        <i class="fas fa-envelope"></i> <span>Mensajes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-tab="estadisticas">
+                        <i class="fas fa-chart-line"></i> <span>Estadísticas</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <main id="mainContent" class="main-content">
+        <!-- El contenido se cargará aquí dinámicamente -->
+        <p class="text-gray-600">Cargando contenido...</p>
+    </main>
+
+    <script>
+        // **IMPORTANTE:** Reemplaza esta URL con la URL de tu aplicación web de Google Apps Script.
+        // La obtendrás después de publicar tu script de GAS.
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzGMsc609qjhWznXsuWR_KgrRw7Trurmvea1kjpjQW7zSUY1-hTp9fvYD7ocEqatCDWIQ/exec';
+
+        let cachedGasContent = {}; // Caché para almacenar el contenido de Google Apps Script una vez cargado
+
+        // Datos de ejemplo locales para las pestañas de la sección "Aplicación"
+        const localTabContent = {
+            inicio: {
+                title: "Bienvenido a Inicio",
+                text: "Aquí encontrarás un resumen de tus actividades recientes y las noticias más importantes. ¡Mantente al día con todo lo que sucede en tu aplicación!"
+            },
+            perfil: {
+                title: "Tu Perfil de Usuario",
+                text: "Gestiona tu información personal, cambia tu foto de perfil y actualiza tus preferencias. Tu privacidad es importante para nosotros."
+            },
+            ajustes: {
+                title: "Configuración de la Aplicación",
+                text: "Personaliza la experiencia de tu aplicación. Ajusta las notificaciones, la apariencia y otras opciones para que se adapte a tus necesidades."
+            },
+            mensajes: {
+                title: "Bandeja de Entrada",
+                text: "Aquí puedes ver todos tus mensajes, enviar nuevos y gestionar tus conversaciones. Mantente conectado con tus contactos."
+            },
+            estadisticas: {
+                title: "Tus Estadísticas",
+                text: "Visualiza gráficos y datos sobre tu uso de la aplicación. Descubre tus hábitos y mejora tu experiencia."
+            }
+        };
+
+        // Función para obtener el contenido de las pestañas desde Google Apps Script (para tab1-tab6)
+        async function fetchGasTabContent() {
+            if (Object.keys(cachedGasContent).length > 0) {
+                return cachedGasContent; // Si ya está en caché, lo devuelve
+            }
+
+            try {
+                const response = await fetch(GAS_WEB_APP_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                cachedGasContent = data; // Almacena en caché
+                return data;
+            } catch (error) {
+                console.error("Error fetching tab content from GAS:", error);
+                // Retorna un objeto con errores para que el renderizado pueda manejarlos
+                return {
+                    tab1: { rawHtml: '<p class="text-red-500">Error al cargar el contenido de Información General.</p>' },
+                    tab2: { rawHtml: '<p class="text-red-500">Error al cargar el contenido de Detalles del Producto.</p>' },
+                    tab3: { rawHtml: '<p class="text-red-500">Error al cargar el contenido de Preguntas Frecuentes.</p>' },
+                    tab4: { rawHtml: '<p class="text-red-500">Error al cargar el contenido de Contacto.</p>' },
+                    tab5: { rawHtml: '<p class="text-red-500">Error al cargar el contenido de Novedades.</p>' },
+                    tab6: { rawHtml: '<p class="text-red-500">Error al cargar el contenido de Testimonios.</p>' }
+                };
+            }
+        }
+
+        // Función unificada para renderizar el contenido de cualquier pestaña
+        async function renderContent(tabId) {
+            mainContent.innerHTML = '<p class="text-gray-600">Cargando contenido...</p>'; // Mostrar mensaje de carga
+
+            // Limpiar estilos inyectados previamente de Google Docs
+            const gasStylesTag = document.getElementById('gas-injected-styles');
+            if (gasStylesTag) {
+                gasStylesTag.innerHTML = '';
+            }
+
+            if (tabId.startsWith('tab')) { // Si la pestaña es de la sección "Información" (GAS)
+                const allContent = await fetchGasTabContent();
+                const content = allContent[tabId];
+
+                if (content && content.rawHtml) {
+                    mainContent.innerHTML = content.rawHtml; // Inyectar el HTML directamente
+
+                    // Inyectar estilos CSS extraídos de Google Docs si existen
+                    let currentGasStylesTag = document.getElementById('gas-injected-styles');
+                    if (!currentGasStylesTag) {
+                        currentGasStylesTag = document.createElement('style');
+                        currentGasStylesTag.id = 'gas-injected-styles';
+                        document.head.appendChild(currentGasStylesTag);
+                    }
+                    if (content.extractedCss) {
+                        currentGasStylesTag.innerHTML = content.extractedCss;
+                    }
+                } else {
+                    mainContent.innerHTML = `<p class="text-red-500">Contenido de ${tabId} no disponible desde Google Docs.</p>`;
+                }
+            } else { // Si la pestaña es de la sección "Aplicación" (datos locales)
+                const content = localTabContent[tabId];
+                if (content) {
+                    mainContent.innerHTML = `<h1>${content.title}</h1><p>${content.text}</p>`;
+                } else {
+                    mainContent.innerHTML = `<p class="text-red-500">Contenido de ${tabId} no disponible localmente.</p>`;
+                }
+            }
+        }
+
+        // Obtener referencias a los elementos del DOM
+        const sidebar = document.getElementById('mySidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mainContent = document.getElementById('mainContent');
+        const sidebarLinks = document.querySelectorAll('.sidebar ul li a'); // Todos los enlaces de pestañas
+        const sectionToggles = document.querySelectorAll('.sidebar-section .section-toggle'); // Botones de alternar de las secciones
+
+        // Función para alternar el estado expandido/colapsado del sidebar principal
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed'); // Alterna la clase 'collapsed' en el sidebar
+            mainContent.classList.toggle('shifted'); // Alterna la clase 'shifted' en el contenido principal
+            // Ajusta el max-height de las secciones expandidas al colapsar/expandir el sidebar principal
+            setSectionMaxHeight();
+        });
+
+        // Función para manejar la pestaña activa al hacer clic y cargar su contenido
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault(); // Evita el comportamiento por defecto del enlace (navegar)
+
+                // Remover la clase 'active' de todas las pestañas
+                document.querySelectorAll('.sidebar ul li').forEach(item => {
+                    item.classList.remove('active');
+                });
+
+                // Añadir la clase 'active' a la pestaña clicada
+                link.parentElement.classList.add('active');
+
+                // Cargar el contenido de la pestaña usando la función unificada
+                const tabName = link.dataset.tab;
+                renderContent(tabName);
+            });
+        });
+
+        // Función para alternar el estado expandido/colapsado de las secciones internas
+        sectionToggles.forEach(button => {
+            button.addEventListener('click', () => {
+                const sectionContent = button.closest('.section-header').nextElementSibling; // La lista ul.section-content
+                const icon = button.querySelector('i');
+
+                if (sectionContent.classList.contains('expanded')) {
+                    // Si está expandido, lo colapsamos
+                    sectionContent.style.maxHeight = sectionContent.scrollHeight + 'px'; // Establece la altura actual
+                    setTimeout(() => {
+                        sectionContent.style.maxHeight = '0'; // Luego colapsa a 0
+                        sectionContent.classList.remove('expanded');
+                    }, 10); // Pequeño retraso para permitir la transición
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                } else {
+                    // Si está colapsado, lo expandimos
+                    sectionContent.style.maxHeight = sectionContent.scrollHeight + 'px'; // Expande a la altura completa
+                    sectionContent.classList.add('expanded');
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                    // Una vez que la transición termine, podemos quitar el max-height para contenido dinámico
+                    sectionContent.addEventListener('transitionend', function handler() {
+                        if (sectionContent.classList.contains('expanded')) {
+                            sectionContent.style.maxHeight = 'none'; // Permite que el contenido se ajuste libremente
+                        }
+                        sectionContent.removeEventListener('transitionend', handler);
+                    });
+                }
+            });
+        });
+
+        // Función para establecer el max-height inicial de las secciones expandidas
+        function setSectionMaxHeight() {
+            document.querySelectorAll('.sidebar-section .section-content.expanded').forEach(content => {
+                content.style.maxHeight = 'none'; // Temporalmente para obtener el scrollHeight correcto
+                content.style.maxHeight = content.scrollHeight + 'px';
+            });
+        }
+
+        // Cargar el contenido de la primera pestaña al cargar la página por primera vez
+        // y establecer las alturas iniciales de las secciones
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialActiveLink = document.querySelector('.sidebar ul li.active a');
+            if (initialActiveLink) {
+                renderContent(initialActiveLink.dataset.tab);
+            }
+            setSectionMaxHeight(); // Establece la altura correcta para las secciones expandidas al cargar
+        });
+
+        // Ajustar el max-height de las secciones expandidas al redimensionar la ventana
+        window.addEventListener('resize', setSectionMaxHeight);
+    </script>
+</body>
+</html>
